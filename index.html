@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>地图插件</title>
+		<style type="text/css">
+			#map{
+				width: 100%;
+				height: 600px;
+			}
+			.mapAddress{
+				/*width: ;*/
+				height: 100px;
+			}
+			/*自定义的提示框*/
+			.mapAddress .geographical{
+				width: 200px;
+				background-color: #fff;
+				border-radius: 10px;
+				-webkit-border-radius: 10px;
+				padding: 10px;
+				display: none;
+			}
+			.mapAddress .geographical .address{
+				font-size: 26px;
+				margin: 0;
+				margin-bottom: 5px;
+			}
+			.mapAddress .geographical .marker{
+				font-size: 18px;
+			}
+			.mapAddress .geographical .markerI:before{
+				content: 'X';
+				width: 20px;
+				height: 20px;
+				display: inline-block;
+				float: right;
+				font-size: 14px;
+				font-style: normal;
+				text-align: center;
+				line-height: 20px;
+			}
+			#road{
+				width: 160px;
+				/*background-color: #fff;*/
+				position: absolute;
+				top: 10px;
+				right: 10px;
+			}
+			#road span{
+				background-color: #0D9BF2;
+			    color: #FFF;
+			    border: 0;
+			    outline: none;
+			    padding-left: 5px;
+			    padding-right: 5px;
+			    border-radius: 3px;
+			    margin-bottom: 4px;
+			    cursor: pointer;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map"></div>
+		<!--路况图层-->
+		<div id="road">
+			<span id="lukuan">路况显示/隐藏</span>
+		</div>
+	</body>
+	<script type="text/javascript" src="http://webapi.amap.com/maps?v=1.4.6&key=740e7d2af7a2c94ab403a76ca8b4f29c"></script>
+	<!--引入UI组件库异步版本main-async.js（1.0版本） -->
+	<script src="//webapi.amap.com/ui/1.0/main-async.js"></script>
+	<script src="js/map.js" type="text/javascript" charset="utf-8"></script>
+</html>

